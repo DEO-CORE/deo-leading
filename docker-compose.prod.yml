@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./bec
+      dockerfile: Dockerfile.prod
+    container_name: deo-backend-prod
+    restart: always
+    environment:
+      - DEBUG=0
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-production}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+    volumes:
+      - static_volume:/app/staticfiles
+    expose:
+      - "8000"
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 4 core.wsgi:application"
+
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile.prod
+    container_name: deo-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/app/staticfiles:ro
+    depends_on:
+      - backend
+
+volumes:
+  static_volume:
